@@ -1,17 +1,32 @@
 import math
 import random
 import sys
+from operator import truediv
+from pickle import NONE
+from telnetlib import NOOPT
 
 import numpy as np
 import pygame
 from pygame.locals import *
+from soupsieve import closest
 
+width = 600
 white = (255, 255, 255)
 black = (0, 0, 0)
 red = (255, 0, 0)
 green = (0, 255, 0)
-screen = pygame.display.set_mode((600, 600))
+blue = (0, 0, 255)
+screen = pygame.display.set_mode((width, width))
 margin = 0
+obstacleList = [
+    (300, 100, 40),
+    (180, 360, 80),
+    (180, 160, 80),
+    (90, 600, 80),
+    (420, 300, 80),
+    (540, 300, 80),
+    (380, 600, 60),
+]
 
 
 class Tile:
@@ -87,34 +102,22 @@ class robot:
 
 
 class line:
-    def __init__(self, start_position, end_position, color, bold):
+    def __init__(self, start_position, end_position):
         self.start_position = start_position
         self.end_position = end_position
-        self.color = color
-        self.bold = bold
-
-    def draw(self):
+        self.color = blue
+        self.bold = 4
         pygame.draw.line(
             screen, self.color, self.start_position, self.end_position, self.bold
         )
 
 
-class path:
-    def __init__(self):
-        self.lines = []
-
-    def add(self):
-        pass
-
-    def delete(self):
-        pass
-
-
 class node:
     def __init__(self, x, y):
-        self.position = (x, y)
+        self.position = np.array([x, y])
         self.child_node = []
-        pygame.draw.circle(screen, green, self.position, 5, 3)
+        self.parent = None
+        # pygame.draw.circle(screen, green, self.position, 5, 3)
 
         self.range = 100
         self.distance = 50
@@ -128,24 +131,92 @@ class node:
         )
         return node(new_position[0], new_position[1])
 
+    def draw(self):
+        pygame.draw.circle(screen, green, self.position, 5, 3)
+
+
+def check_collision(closest_node, theta, dis):
+    robot_radius = 40
+    path_x, path_y = [], []
+    resolution = 0.2
+    for i in range(math.floor(dis / resolution)):
+        path_x.append(i * resolution * math.cos(theta) + closest_node.position[0])
+        path_y.append(i * resolution * math.sin(theta) + closest_node.position[1])
+    for (ox, oy, size) in obstacleList:
+        dx_list = [ox - x for x in path_x]
+        dy_list = [oy - y for y in path_y]
+        d_list = [dx * dx + dy * dy for (dx, dy) in zip(dx_list, dy_list)]
+        d_list.append(50000000)
+        if min(d_list) <= (size + robot_radius) ** 2:
+            print((size + robot_radius) ** 2)
+            return False  # collision
+    return True  # safe
+
+
+def find_closest(target, path_tree):
+    dlist = [
+        (node.position[0] - target.position[0]) ** 2
+        + (node.position[1] - target.position[1]) ** 2
+        for node in path_tree
+    ]
+    minind = dlist.index(min(dlist))
+    return minind
+
+
+def draw(path_tree):
+    for node in path_tree:
+        if node.parent != None:
+            line(node.position, path_tree[node.parent].position)
+
+
+def goal_check(path_tree, end_node):
+    for path in path_tree:
+        if np.linalg.norm(path.position - end_node.position) < 5:
+            while True:
+                print("done")
+
 
 pygame.init()
 pygame.display.set_caption("RRT")
 
-grid = Grid(50, 0, 0)
+grid = Grid(20, 0, 0)
 grid.update(np.random.rand(grid.x_n, grid.y_n))
 r = robot(400, 300, 10)
 grid.draw()
-start_node = node(100, 100)
-end_node = node(500, 500)
-path = []
-path.append(start_node.explore_new_node())
+start_node = node(50, 50)
+start_node.draw()
+end_node = node(580, 580)
+end_node.draw()
+for obstacle in obstacleList:
+    pygame.draw.circle(screen, black, (obstacle[0], obstacle[1]), obstacle[2])
+path_tree = []
+path_tree.append(start_node)
+distance = 100
+step_dis = 0.3  #%
+goal_rate = 10  # 0-100
 while True:
-    # screen.fill(black)  # 背景を黒で塗りつぶす
+    search_node = node(random.randint(0, 600), random.randint(0, 600))
+    if random.randint(0, 100) <= goal_rate:
+        search_node = end_node
+    closest_node_id = find_closest(search_node, path_tree)
+    closest_node = path_tree[closest_node_id]
 
-    # r.move()
-    # r.draw()
-    new_node = path[len(path) - 1].explore_new_node()
+    vec = search_node.position - closest_node.position
+    dis = step_dis * np.linalg.norm(vec)
+    theta = np.arctan2(vec[1], vec[0])
+    new_node = node(
+        dis * math.cos(theta) + closest_node.position[0],
+        dis * math.sin(theta) + closest_node.position[1],
+    )
+    if check_collision(closest_node, theta, dis):
+        new_node.parent = closest_node_id
+        path_tree.append(new_node)
+
+    goal_check(path_tree, end_node)
+
+    draw(path_tree)
+
+    pygame.time.wait(0)
 
     # 画面を更新 --- (*4)
     pygame.display.update()
