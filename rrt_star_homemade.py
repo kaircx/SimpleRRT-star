@@ -1,12 +1,13 @@
 import math
 import random
 import sys
+from uuid import NAMESPACE_X500
 
 import numpy as np
 import pygame
 from pygame.locals import *
 
-width = 600
+width = 620
 white = (255, 255, 255)
 black = (0, 0, 0)
 red = (255, 0, 0)
@@ -16,7 +17,7 @@ screen = pygame.display.set_mode((width, width))
 margin = 0
 obstacleList = [
     (300, 100, 40),
-    (180, 360, 80),
+    (180, 380, 80),
     (180, 160, 80),
     (90, 600, 80),
     (420, 300, 80),
@@ -34,17 +35,27 @@ class Tile:
         self.size = size
         self.color = (255, 255, 255)
         self.danger = 255
+        self.flag = False
+
+    def get_danger(self):
+        return self.danger
 
     def update_danger(self, danger):
         self.danger = danger
+        self.color = (255 * self.danger, 255 * self.danger, 255 * self.danger)
 
     def draw(self):
-        self.color = (self.danger, self.danger, self.danger)
         pygame.draw.rect(
             screen,
             self.color,
             (self.position[0], self.position[1], self.size, self.size),
         )
+        if self.flag:
+            pygame.draw.rect(
+                screen,
+                (255, 255, 0),
+                (self.position[0], self.position[1], self.size, self.size),
+            )
 
 
 class Grid:
@@ -70,9 +81,15 @@ class Grid:
     def update(self, danger_list):
         for list in range(len(self.tile_array)):
             for tile in range(len(self.tile_array[list])):
-                self.tile_array[list][tile].update_danger(
-                    math.floor(255 * danger_list[list][tile])
-                )
+                self.tile_array[list][tile].update_danger(danger_list[list][tile])
+
+    def get_danger(self, node):
+        x = node.position[0]
+        y = node.position[1]
+        n_x = math.floor(x / self.tile_size)
+        n_y = math.floor(y / self.tile_size)
+        self.tile_array[n_x][n_y].flag = True
+        return self.tile_array[n_x][n_y].danger
 
     def draw(self):
         for list in range(len(self.tile_array)):
@@ -116,7 +133,7 @@ class node:
 
 
 def check_collision(closest_node, theta, dis):
-    robot_radius = 40
+    robot_radius = 20
     path_x, path_y = [], []
     resolution = 0.2
     for i in range(math.floor(dis / resolution)):
@@ -152,7 +169,7 @@ def draw(path_tree):
 def goal_check(path_tree, end_node):
     for i, path in enumerate(path_tree):
         if np.linalg.norm(path.position - end_node.position) < 5:
-            print("done")
+            # print("done")
             return i
     return None
 
@@ -161,8 +178,8 @@ def draw_path_from(path_tree, goal_node):
     if goal_node != None:
         index = goal_node
         while index != 0:
-            print(index)
-            print(path_tree[index].parent)
+            # print(index)
+            # print(path_tree[index].parent)
             line(
                 path_tree[index].position,
                 path_tree[path_tree[index].parent].position,
@@ -209,10 +226,10 @@ def calc_distance_theta(from_node, to_node):
 pygame.init()
 pygame.display.set_caption("RRT")
 
-grid = Grid(20, 0, 0)
+grid = Grid(20, -20, 0)
 grid.update(np.random.rand(grid.x_n, grid.y_n))
 start_node = node(50, 50)
-end_node = node(580, 580)
+end_node = node(550, 550)
 goal_node = None
 path_tree = []
 path_tree.append(start_node)
@@ -220,7 +237,7 @@ distance = 100
 step_dis = 0.3  #%
 goal_rate = 10  # 0-100
 while True:
-    print(len(path_tree))
+    # print(len(path_tree))
     screen.fill(black)
     # init
     grid.draw()
@@ -228,30 +245,31 @@ while True:
     end_node.draw()
     for obstacle in obstacleList:
         pygame.draw.circle(screen, black, (obstacle[0], obstacle[1]), obstacle[2])
-    ##plannning
-    search_node = node(random.randint(0, 600), random.randint(0, 600))
-    search_node.draw()
-    if random.randint(0, 100) <= goal_rate:
-        search_node = end_node
-    closest_node_id = find_closest(search_node, path_tree)
-    closest_node = path_tree[closest_node_id]
-    distance, theta = calc_distance_theta(closest_node, search_node)
-    dis = distance * step_dis
-    new_node = node(
-        dis * math.cos(theta) + closest_node.position[0],
-        dis * math.sin(theta) + closest_node.position[1],
-    )
-    if check_collision(closest_node, theta, dis):
-        new_node.parent = closest_node_id
-        new_node.cost, theta = calc_distance_theta(new_node, closest_node)
-        path_tree.append(new_node)
-        # RRT-star
-        path_update(new_node, path_tree, closest_node_id)
+    print(grid.get_danger(start_node))
+    ########plannning
+    # search_node = node(random.randint(0, 600), random.randint(0, 600))
+    # search_node.draw()
+    # if random.randint(0, 100) <= goal_rate:
+    #     search_node = end_node
+    # closest_node_id = find_closest(search_node, path_tree)
+    # closest_node = path_tree[closest_node_id]
+    # distance, theta = calc_distance_theta(closest_node, search_node)
+    # dis = distance * step_dis
+    # new_node = node(
+    #     dis * math.cos(theta) + closest_node.position[0],
+    #     dis * math.sin(theta) + closest_node.position[1],
+    # )
+    # if check_collision(closest_node, theta, dis):
+    #     new_node.parent = closest_node_id
+    #     new_node.cost, theta = calc_distance_theta(new_node, closest_node)
+    #     path_tree.append(new_node)
+    #     # RRT-star
+    #     path_update(new_node, path_tree, closest_node_id)
 
-    draw(path_tree)
+    # draw(path_tree)
 
-    goal_node = goal_check(path_tree, end_node)
-    draw_path_from(path_tree, goal_node)
+    # goal_node = goal_check(path_tree, end_node)
+    # draw_path_from(path_tree, goal_node)
 
     pygame.time.wait(0)
 
