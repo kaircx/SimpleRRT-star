@@ -23,6 +23,9 @@ obstacleList = [
     (540, 300, 80),
     (380, 600, 60),
 ]
+# obstacleList = [
+#     (0, 0, 0),
+# ]
 
 
 class Tile:
@@ -113,6 +116,7 @@ class node:
         self.position = np.array([x, y])
         self.child_node = []
         self.parent = None
+        self.cost = 0  # distance cost from parent node
         # pygame.draw.circle(screen, green, self.position, 5, 3)
 
         self.range = 100
@@ -144,7 +148,7 @@ def check_collision(closest_node, theta, dis):
         d_list = [dx * dx + dy * dy for (dx, dy) in zip(dx_list, dy_list)]
         d_list.append(50000000)
         if min(d_list) <= (size + robot_radius) ** 2:
-            print((size + robot_radius) ** 2)
+            # print((size + robot_radius) ** 2)
             return False  # collision
     return True  # safe
 
@@ -168,8 +172,42 @@ def draw(path_tree):
 def goal_check(path_tree, end_node):
     for path in path_tree:
         if np.linalg.norm(path.position - end_node.position) < 5:
-            while True:
-                print("done")
+            print("done")
+
+
+def path_update(new_node, path_tree, closest_node_id):
+    index = len(path_tree) - 1
+    cost_sum_new = 0
+    while index != 0:
+        cost_sum_new += path_tree[index].cost
+        index = path_tree[index].parent
+
+    for i, node in enumerate(path_tree):
+        if i != closest_node_id:
+            cost, theta = calc_distance_theta(new_node, node)
+            index = i
+            cost_sum = 0
+            while index != 0:
+                cost_sum += path_tree[index].cost
+                index = path_tree[index].parent
+
+            if (
+                check_collision(
+                    new_node,
+                    theta,
+                    cost,
+                )
+                and cost_sum_new + cost < cost_sum
+            ):
+                print("try")
+                node.cost = cost
+                node.parent = len(path_tree) - 1
+
+
+def calc_distance_theta(from_node, to_node):
+    vec = to_node.position - from_node.position
+    theta = np.arctan2(vec[1], vec[0])
+    return np.linalg.norm(vec), theta
 
 
 pygame.init()
@@ -177,35 +215,40 @@ pygame.display.set_caption("RRT")
 
 grid = Grid(20, 0, 0)
 grid.update(np.random.rand(grid.x_n, grid.y_n))
-r = robot(400, 300, 10)
-grid.draw()
 start_node = node(50, 50)
-start_node.draw()
 end_node = node(580, 580)
-end_node.draw()
-for obstacle in obstacleList:
-    pygame.draw.circle(screen, black, (obstacle[0], obstacle[1]), obstacle[2])
 path_tree = []
 path_tree.append(start_node)
 distance = 100
 step_dis = 0.3  #%
 goal_rate = 10  # 0-100
 while True:
+    screen.fill(black)
+    # init
+    grid.draw()
+    start_node.draw()
+    end_node.draw()
+    for obstacle in obstacleList:
+        pygame.draw.circle(screen, black, (obstacle[0], obstacle[1]), obstacle[2])
+    ##plannning
     search_node = node(random.randint(0, 600), random.randint(0, 600))
+    search_node.draw()
     if random.randint(0, 100) <= goal_rate:
         search_node = end_node
     closest_node_id = find_closest(search_node, path_tree)
     closest_node = path_tree[closest_node_id]
-    vec = search_node.position - closest_node.position
-    dis = step_dis * np.linalg.norm(vec)
-    theta = np.arctan2(vec[1], vec[0])
+    distance, theta = calc_distance_theta(closest_node, search_node)
+    dis = distance * step_dis
     new_node = node(
         dis * math.cos(theta) + closest_node.position[0],
         dis * math.sin(theta) + closest_node.position[1],
     )
     if check_collision(closest_node, theta, dis):
         new_node.parent = closest_node_id
+        new_node.cost, theta = calc_distance_theta(new_node, closest_node)
         path_tree.append(new_node)
+        # RRT-star
+        path_update(new_node, path_tree, closest_node_id)
 
     goal_check(path_tree, end_node)
 
