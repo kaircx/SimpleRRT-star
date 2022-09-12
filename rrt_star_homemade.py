@@ -247,29 +247,29 @@ while True:
         pygame.draw.circle(screen, black, (obstacle[0], obstacle[1]), obstacle[2])
     print(grid.get_danger(start_node))
     ########plannning
-    # search_node = node(random.randint(0, 600), random.randint(0, 600))
-    # search_node.draw()
-    # if random.randint(0, 100) <= goal_rate:
-    #     search_node = end_node
-    # closest_node_id = find_closest(search_node, path_tree)
-    # closest_node = path_tree[closest_node_id]
-    # distance, theta = calc_distance_theta(closest_node, search_node)
-    # dis = distance * step_dis
-    # new_node = node(
-    #     dis * math.cos(theta) + closest_node.position[0],
-    #     dis * math.sin(theta) + closest_node.position[1],
-    # )
-    # if check_collision(closest_node, theta, dis):
-    #     new_node.parent = closest_node_id
-    #     new_node.cost, theta = calc_distance_theta(new_node, closest_node)
-    #     path_tree.append(new_node)
-    #     # RRT-star
-    #     path_update(new_node, path_tree, closest_node_id)
+    search_node = node(random.randint(0, 600), random.randint(0, 600))
+    search_node.draw()
+    if random.randint(0, 100) <= goal_rate:
+        search_node = end_node
+    closest_node_id = find_closest(search_node, path_tree)
+    closest_node = path_tree[closest_node_id]
+    distance, theta = calc_distance_theta(closest_node, search_node)
+    dis = distance * step_dis
+    new_node = node(
+        dis * math.cos(theta) + closest_node.position[0],
+        dis * math.sin(theta) + closest_node.position[1],
+    )
+    if check_collision(closest_node, theta, dis):
+        new_node.parent = closest_node_id
+        new_node.cost, theta = calc_distance_theta(new_node, closest_node)
+        path_tree.append(new_node)
+        # RRT-star
+        path_update(new_node, path_tree, closest_node_id)
 
-    # draw(path_tree)
+    draw(path_tree)
 
-    # goal_node = goal_check(path_tree, end_node)
-    # draw_path_from(path_tree, goal_node)
+    goal_node = goal_check(path_tree, end_node)
+    draw_path_from(path_tree, goal_node)
 
     pygame.time.wait(0)
 
