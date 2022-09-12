@@ -150,20 +150,26 @@ def draw(path_tree):
 
 
 def goal_check(path_tree, end_node):
-    for path in path_tree:
+    for i, path in enumerate(path_tree):
         if np.linalg.norm(path.position - end_node.position) < 5:
             print("done")
-            index = len(path_tree) - 1
-            while index != 0:
-                print(index)
-                print(path_tree[index].parent)
-                line(
-                    path_tree[index].position,
-                    path_tree[path_tree[index].parent].position,
-                    red,
-                    5,
-                )
-                index = path_tree[index].parent
+            return i
+    return None
+
+
+def draw_path_from(path_tree, goal_node):
+    if goal_node != None:
+        index = goal_node
+        while index != 0:
+            print(index)
+            print(path_tree[index].parent)
+            line(
+                path_tree[index].position,
+                path_tree[path_tree[index].parent].position,
+                red,
+                5,
+            )
+            index = path_tree[index].parent
 
 
 def path_update(new_node, path_tree, closest_node_id):
@@ -207,6 +213,7 @@ grid = Grid(20, 0, 0)
 grid.update(np.random.rand(grid.x_n, grid.y_n))
 start_node = node(50, 50)
 end_node = node(580, 580)
+goal_node = None
 path_tree = []
 path_tree.append(start_node)
 distance = 100
@@ -242,7 +249,10 @@ while True:
         path_update(new_node, path_tree, closest_node_id)
 
     draw(path_tree)
-    goal_check(path_tree, end_node)
+
+    goal_node = goal_check(path_tree, end_node)
+    draw_path_from(path_tree, goal_node)
+
     pygame.time.wait(0)
 
     # 画面を更新 --- (*4)
