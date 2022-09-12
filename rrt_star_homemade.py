@@ -80,32 +80,12 @@ class Grid:
                 self.tile_array[list][tile].draw()
 
 
-class robot:
-    def __init__(self, x, y, r):
-        self.position = (x, y)
-        self.r = r
-        self.range = 100
-        self.distance = 2
-
-    def draw(self):
-        pygame.draw.circle(screen, green, self.position, self.r, 3)
-        pygame.draw.circle(screen, red, self.position, self.r)
-
-    def move(self):
-        distance = random.randint(self.distance / 2, self.distance)
-        theta = random.uniform(-math.pi, math.pi)
-        self.position = (
-            self.position[0] + distance * math.cos(theta),
-            self.position[1] + distance * math.sin(theta),
-        )
-
-
 class line:
-    def __init__(self, start_position, end_position):
+    def __init__(self, start_position, end_position, color, b):
         self.start_position = start_position
         self.end_position = end_position
-        self.color = blue
-        self.bold = 4
+        self.color = color
+        self.bold = b
         pygame.draw.line(
             screen, self.color, self.start_position, self.end_position, self.bold
         )
@@ -166,13 +146,24 @@ def find_closest(target, path_tree):
 def draw(path_tree):
     for node in path_tree:
         if node.parent != None:
-            line(node.position, path_tree[node.parent].position)
+            line(node.position, path_tree[node.parent].position, blue, 4)
 
 
 def goal_check(path_tree, end_node):
     for path in path_tree:
         if np.linalg.norm(path.position - end_node.position) < 5:
             print("done")
+            index = len(path_tree) - 1
+            while index != 0:
+                print(index)
+                print(path_tree[index].parent)
+                line(
+                    path_tree[index].position,
+                    path_tree[path_tree[index].parent].position,
+                    red,
+                    5,
+                )
+                index = path_tree[index].parent
 
 
 def path_update(new_node, path_tree, closest_node_id):
@@ -199,7 +190,6 @@ def path_update(new_node, path_tree, closest_node_id):
                 )
                 and cost_sum_new + cost < cost_sum
             ):
-                print("try")
                 node.cost = cost
                 node.parent = len(path_tree) - 1
 
@@ -223,6 +213,7 @@ distance = 100
 step_dis = 0.3  #%
 goal_rate = 10  # 0-100
 while True:
+    print(len(path_tree))
     screen.fill(black)
     # init
     grid.draw()
@@ -250,10 +241,8 @@ while True:
         # RRT-star
         path_update(new_node, path_tree, closest_node_id)
 
-    goal_check(path_tree, end_node)
-
     draw(path_tree)
-
+    goal_check(path_tree, end_node)
     pygame.time.wait(0)
 
     # 画面を更新 --- (*4)
