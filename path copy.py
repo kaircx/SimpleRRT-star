@@ -1,14 +1,10 @@
 import math
 import random
 import sys
-from operator import truediv
-from pickle import NONE
-from telnetlib import NOOPT
 
 import numpy as np
 import pygame
 from pygame.locals import *
-from soupsieve import closest
 
 width = 600
 white = (255, 255, 255)
@@ -200,7 +196,6 @@ while True:
         search_node = end_node
     closest_node_id = find_closest(search_node, path_tree)
     closest_node = path_tree[closest_node_id]
-
     vec = search_node.position - closest_node.position
     dis = step_dis * np.linalg.norm(vec)
     theta = np.arctan2(vec[1], vec[0])
