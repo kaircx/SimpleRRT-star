@@ -191,7 +191,7 @@ distance = 100
 step_dis = 0.3  #%
 goal_rate = 10  # 0-100
 while True:
-    search_node = node(random.randint(0, 600), random.randint(0, 600))
+    search_node = node(random.randint(0, width), random.randint(0, width))
     if random.randint(0, 100) <= goal_rate:
         search_node = end_node
     closest_node_id = find_closest(search_node, path_tree)
