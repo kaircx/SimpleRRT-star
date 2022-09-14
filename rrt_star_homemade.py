@@ -252,16 +252,22 @@ map=np.array([
 [0,1,0,1,0,1],
 [0,0,0,1,1,0]
 ])
-grid = Grid(100, 0, 0)
+cell_number=6
+cell=width/cell_number
+grid = Grid(cell, 0, 0)
 grid.update(map)#np.random.rand(grid.x_n, grid.y_n))
 start_node = node(50, 50)
 end_node = node(550, 550)
+distance = 100 #あんま変えない
+step_dis = 0.3  #%
+goal_rate = 10  # 0-100
+
+
 goal_node = None
 path_tree = []
 path_tree.append(start_node)
-distance = 100
-step_dis = 0.3  #%
-goal_rate = 10  # 0-100
+
+
 while True:
     print(len(path_tree))
     screen.fill(black)
