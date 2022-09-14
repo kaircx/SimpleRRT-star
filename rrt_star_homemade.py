@@ -247,7 +247,7 @@ while True:
         pygame.draw.circle(screen, black, (obstacle[0], obstacle[1]), obstacle[2])
     print(grid.get_danger(start_node))
     ########plannning
-    search_node = node(random.randint(0, 600), random.randint(0, 600))
+    search_node = node(random.randint(0, width), random.randint(0, width))
     search_node.draw()
     if random.randint(0, 100) <= goal_rate:
         search_node = end_node
